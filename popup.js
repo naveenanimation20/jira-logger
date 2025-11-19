@@ -299,7 +299,11 @@ function updateStepsList() {
   // Add event listeners to delete buttons
   stepsList.querySelectorAll('.delete-step-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-      const index = parseInt(e.target.dataset.index);
+      e.preventDefault();
+      e.stopPropagation();
+      // Use currentTarget instead of target to get the button element
+      const index = parseInt(e.currentTarget.dataset.index);
+      console.log(`🗑️ Delete button clicked for step ${index}`);
       deleteStep(index);
     });
   });
@@ -409,11 +413,20 @@ function toggleStepsEditing() {
 
 // Delete a step from the recording
 function deleteStep(index) {
+  console.log(`📍 deleteStep called with index: ${index}`);
+  console.log(`📊 Total steps before delete: ${recordingData.steps.length}`);
+  console.log(`✅ Index valid: ${index >= 0 && index < recordingData.steps.length}`);
+
   if (index >= 0 && index < recordingData.steps.length) {
+    const deletedStep = recordingData.steps[index];
+    console.log(`🗑️ Deleting step ${index}: ${formatStepDescription(deletedStep)}`);
+
     recordingData.steps.splice(index, 1);
 
     // Update storage
-    chrome.storage.local.set({ recordedSteps: recordingData.steps });
+    chrome.storage.local.set({ recordedSteps: recordingData.steps }, () => {
+      console.log(`💾 Storage updated. New count: ${recordingData.steps.length}`);
+    });
 
     // Update UI
     updateStepsList();
@@ -426,7 +439,9 @@ function deleteStep(index) {
       ).join('<br>');
     }
 
-    console.log(`Step ${index + 1} deleted. Remaining steps: ${recordingData.steps.length}`);
+    console.log(`✅ Step deleted successfully. Remaining steps: ${recordingData.steps.length}`);
+  } else {
+    console.error(`❌ Invalid index: ${index}, total steps: ${recordingData.steps.length}`);
   }
 }
 
