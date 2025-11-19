@@ -354,32 +354,40 @@ function toggleStepsEditing() {
     deleteButtons.forEach((btn, index) => {
       console.log(`Button ${index} BEFORE - display: "${btn.style.display}", class: "${btn.className}"`);
 
-      btn.style.display = 'flex';
-      btn.style.alignItems = 'center';
-      btn.style.justifyContent = 'center';
-      btn.style.background = '#dc2626';
-      btn.style.color = 'white';
-      btn.style.border = 'none';
-      btn.style.width = '20px';
-      btn.style.height = '20px';
-      btn.style.borderRadius = '50%';
-      btn.style.cursor = 'pointer';
-      btn.style.fontSize = '16px';
-      btn.style.padding = '0';
-      btn.style.fontWeight = 'bold';
+      // Use cssText to force all styles at once (can't be overridden as easily)
+      btn.style.cssText = `
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: #dc2626 !important;
+        color: white !important;
+        border: none !important;
+        width: 20px !important;
+        height: 20px !important;
+        min-width: 20px !important;
+        min-height: 20px !important;
+        max-width: 20px !important;
+        max-height: 20px !important;
+        border-radius: 50% !important;
+        cursor: pointer !important;
+        font-size: 16px !important;
+        line-height: 1 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        font-weight: bold !important;
+      `;
 
       const computedStyle = window.getComputedStyle(btn);
       const isVisible = btn.offsetWidth > 0 && btn.offsetHeight > 0;
 
       console.log(`Button ${index} AFTER - inline display: "${btn.style.display}", computed display: "${computedStyle.display}", width: ${btn.offsetWidth}px, height: ${btn.offsetHeight}px, visible: ${isVisible}`);
+      console.log(`  - Computed width style: ${computedStyle.width}, Computed height style: ${computedStyle.height}`);
 
       if (!isVisible) {
-        console.error(`❌ Button ${index} is INVISIBLE despite setting display: flex!`);
-        console.log(`  - Computed display: ${computedStyle.display}`);
-        console.log(`  - Computed visibility: ${computedStyle.visibility}`);
-        console.log(`  - Computed opacity: ${computedStyle.opacity}`);
-        console.log(`  - Position: ${computedStyle.position}`);
-        console.log(`  - Z-index: ${computedStyle.zIndex}`);
+        console.error(`❌ Button ${index} STILL INVISIBLE!`);
+        console.log(`  - Button innerHTML: "${btn.innerHTML}"`);
+        console.log(`  - Button textContent: "${btn.textContent}"`);
       }
     });
 
