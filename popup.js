@@ -324,7 +324,15 @@ function toggleStepsEditing() {
   const stepsList = document.getElementById('steps-list');
   const editBtn = document.getElementById('edit-steps-btn');
 
-  console.log('Toggle edit mode:', stepsEditMode);
+  console.log('🔧 ========== TOGGLE EDIT MODE ==========');
+  console.log('Edit mode state:', stepsEditMode);
+  console.log('Steps list element exists:', !!stepsList);
+  console.log('Edit button element exists:', !!editBtn);
+
+  if (!stepsList) {
+    console.error('❌ CRITICAL: steps-list element not found!');
+    return;
+  }
 
   if (stepsEditMode) {
     stepsList.classList.add('edit-mode');
@@ -333,7 +341,22 @@ function toggleStepsEditing() {
 
     // Manually show delete buttons (CSS backup solution)
     const deleteButtons = stepsList.querySelectorAll('.delete-step-btn');
-    deleteButtons.forEach(btn => {
+    console.log('🔍 Delete buttons found:', deleteButtons.length);
+
+    if (deleteButtons.length === 0) {
+      console.error('❌ NO DELETE BUTTONS FOUND!');
+      console.log('Steps list innerHTML (first 1000 chars):', stepsList.innerHTML.substring(0, 1000));
+      const allButtons = stepsList.querySelectorAll('button');
+      console.log('Total buttons in list:', allButtons.length);
+      return;
+    }
+
+    deleteButtons.forEach((btn, index) => {
+      console.log(`Button ${index} BEFORE:`, {
+        display: btn.style.display,
+        className: btn.className
+      });
+
       btn.style.display = 'flex';
       btn.style.alignItems = 'center';
       btn.style.justifyContent = 'center';
@@ -346,24 +369,29 @@ function toggleStepsEditing() {
       btn.style.cursor = 'pointer';
       btn.style.fontSize = '16px';
       btn.style.padding = '0';
+      btn.style.fontWeight = 'bold';
+
+      console.log(`Button ${index} AFTER:`, {
+        display: btn.style.display,
+        computedDisplay: window.getComputedStyle(btn).display,
+        visible: btn.offsetWidth > 0 && btn.offsetHeight > 0
+      });
     });
 
-    console.log('Edit mode ENABLED. Classes on list:', stepsList.className);
-    console.log('Delete buttons count:', deleteButtons.length);
-    console.log('Delete buttons manually shown with inline styles');
+    console.log('✅ Edit mode ENABLED');
   } else {
     stepsList.classList.remove('edit-mode');
     editBtn.textContent = 'Edit Steps';
     editBtn.style.color = '';
 
-    // Manually hide delete buttons
     const deleteButtons = stepsList.querySelectorAll('.delete-step-btn');
     deleteButtons.forEach(btn => {
       btn.style.display = 'none';
     });
 
-    console.log('Edit mode DISABLED');
+    console.log('❌ Edit mode DISABLED');
   }
+  console.log('========================================');
 }
 
 // Delete a step from the recording
