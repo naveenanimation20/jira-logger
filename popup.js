@@ -281,6 +281,11 @@ function updateStepsList() {
   const stepsList = document.getElementById('steps-list');
   const stepCount = document.getElementById('step-count');
 
+  if (!stepsList) {
+    console.error('steps-list element not found');
+    return;
+  }
+
   stepCount.textContent = `(${recordingData.steps.length})`;
 
   stepsList.innerHTML = recordingData.steps.map((step, index) => `
@@ -298,6 +303,12 @@ function updateStepsList() {
       deleteStep(index);
     });
   });
+
+  // Preserve edit mode if it was active
+  if (stepsEditMode) {
+    stepsList.classList.add('edit-mode');
+    console.log('Edit mode preserved, delete buttons should be visible');
+  }
 }
 
 // Toggle steps editing mode
@@ -307,14 +318,19 @@ function toggleStepsEditing() {
   const stepsList = document.getElementById('steps-list');
   const editBtn = document.getElementById('edit-steps-btn');
 
+  console.log('Toggle edit mode:', stepsEditMode);
+
   if (stepsEditMode) {
     stepsList.classList.add('edit-mode');
     editBtn.textContent = 'Done Editing';
     editBtn.style.color = '#dc2626';
+    console.log('Edit mode ENABLED. Classes on list:', stepsList.className);
+    console.log('Delete buttons count:', stepsList.querySelectorAll('.delete-step-btn').length);
   } else {
     stepsList.classList.remove('edit-mode');
     editBtn.textContent = 'Edit Steps';
     editBtn.style.color = '';
+    console.log('Edit mode DISABLED');
   }
 }
 

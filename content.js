@@ -220,10 +220,11 @@ function handleClick(event) {
 
     // Don't record clicks on input/textarea fields - they're just focus events, not actionable
     // User typing will be captured by handleInput instead
+    // Checkboxes and radios will be captured by handleChange instead
     if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-      // Exception: record clicks on checkboxes, radio buttons, and submit buttons
-      if (element.type !== 'checkbox' && element.type !== 'radio' && element.type !== 'submit' && element.type !== 'button') {
-        return; // Skip recording this click
+      // Exception: only record clicks on submit and regular buttons
+      if (element.type !== 'submit' && element.type !== 'button') {
+        return; // Skip recording this click (includes text, checkbox, radio, etc.)
       }
     }
 
@@ -279,6 +280,16 @@ function handleInput(event) {
 
   try {
     const element = event.target;
+
+    // Don't record input events for checkboxes, radios, submit buttons
+    // These will be handled by handleChange or handleClick
+    if (element.tagName === 'INPUT' &&
+        (element.type === 'checkbox' || element.type === 'radio' ||
+         element.type === 'submit' || element.type === 'button' ||
+         element.type === 'file')) {
+      return; // Skip these input types
+    }
+
     const selector = getElementSelector(element);
 
     // Debounce input events - only record after 500ms of no typing (reduced for faster capture)
