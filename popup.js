@@ -663,6 +663,9 @@ function populateForm() {
     stepsPreview.innerHTML = recordingData.steps.map((step, index) =>
       `${index + 1}. ${formatStepDescription(step)}`
     ).join('<br>');
+
+    // Also update the editable steps list so Edit Steps functionality works
+    updateStepsList();
   }
   
   // Populate environment details
