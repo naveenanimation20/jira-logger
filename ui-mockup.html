@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Quick Logger - UI Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            font-size: 36px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .mockup-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .screen-wrapper {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .screen-wrapper:hover {
+            transform: translateY(-5px);
+        }
+        
+        .screen-header {
+            background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+            color: white;
+            padding: 15px 20px;
+            font-weight: 600;
+            font-size: 16px;
+            border-bottom: 3px solid #0f766e;
+        }
+        
+        .screen-content {
+            padding: 0;
+            height: 600px;
+            overflow-y: auto;
+            background: #f5f7fa;
+        }
+        
+        /* Reusing styles from popup.css */
+        .popup-mock {
+            width: 100%;
+            padding: 20px;
+        }
+        
+        .header-mock {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e1e8ed;
+        }
+        
+        .logo-mock {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 10px;
+            background: linear-gradient(135deg, #0d9488, #7c3aed);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        h2 {
+            font-size: 20px;
+            background: linear-gradient(135deg, #0d9488 0%, #7c3aed 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+            font-weight: 700;
+        }
+        
+        h3 {
+            font-size: 16px;
+            color: #172B4D;
+            margin: 0 0 15px 0;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+            color: white;
+            box-shadow: 0 2px 8px rgba(13, 148, 136, 0.25);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #0d9488;
+            border: 2px solid #0d9488;
+        }
+        
+        .btn-tertiary {
+            background: transparent;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .recording-header-mock {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 20px;
+            margin: -20px -20px 20px;
+            border-bottom: 2px solid #f59e0b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .recording-title {
+            font-size: 16px;
+            color: #92400e;
+            font-weight: 600;
+        }
+        
+        .timer {
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            color: #92400e;
+        }
+        
+        .steps-box {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .step-item {
+            padding: 8px;
+            margin-bottom: 6px;
+            background: #f4f5f7;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #5E6C84;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .step-number {
+            background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .form-box {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .auto-capture-box {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+            border-radius: 6px;
+            border-left: 4px solid #10b981;
+        }
+        
+        .auto-capture-title {
+            font-size: 14px;
+            color: #065f46;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .pill {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            color: #172B4D;
+            border: 1px solid #DFE1E6;
+        }
+        
+        .form-group-mock {
+            margin-bottom: 15px;
+        }
+        
+        .label-mock {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #172B4D;
+            margin-bottom: 6px;
+        }
+        
+        .input-mock {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #DFE1E6;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+        
+        .screenshot-box {
+            border: 2px dashed #DFE1E6;
+            border-radius: 8px;
+            padding: 10px;
+            background: #FAFBFC;
+            text-align: center;
+        }
+        
+        .screenshot-placeholder {
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #5E6C84;
+            font-size: 14px;
+        }
+        
+        .success-box {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .success-icon-mock {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        
+        .success-title {
+            color: #10b981;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .jira-link-box {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .issue-key {
+            font-size: 20px;
+            color: #0d9488;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .flow-diagram {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .flow-title {
+            font-size: 28px;
+            color: #1a202c;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #0d9488;
+        }
+        
+        .flow-number {
+            background: linear-gradient(135deg, #0d9488 0%, #06b6d4 100%);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+        
+        .flow-content {
+            flex: 1;
+        }
+        
+        .flow-step-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 5px;
+        }
+        
+        .flow-step-desc {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .arrow {
+            text-align: center;
+            color: #0d9488;
+            font-size: 24px;
+            margin: -10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐛 Jira Quick Logger - UI Mockup</h1>
+        
+        <div class="mockup-grid">
+            <!-- Screen 1: Landing -->
+            <div class="screen-wrapper">
+                <div class="screen-header">Step 1: Landing Screen</div>
+                <div class="screen-content">
+                    <div class="popup-mock">
+                        <div class="header-mock">
+                            <div class="logo-mock">🔵</div>
+                            <h2>Jira Quick Logger</h2>
+                        </div>
+                        
+                        <button class="btn btn-primary">
+                            <span>🐛</span> Quick Bug Report
+                        </button>
+                        
+                        <button class="btn btn-secondary">
+                            <span>⏺️</span> Record Steps & Report
+                        </button>
+                        
+                        <button class="btn btn-tertiary">
+                            <span>⚙️</span> Settings
+                        </button>
+                        
+                        <div style="margin-top: 30px;">
+                            <h3 style="font-size: 14px; color: #5E6C84; text-transform: uppercase; letter-spacing: 0.5px;">Recent Bugs</h3>
+                            <p style="text-align: center; color: #9FADBC; font-size: 13px; padding: 20px;">No recent bugs logged</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Screen 2: Recording -->
+            <div class="screen-wrapper">
+                <div class="screen-header">Step 2: Recording Mode</div>
+                <div class="screen-content">
+                    <div class="popup-mock">
+                        <div class="recording-header-mock">
+                            <div class="recording-title">🔴 Recording Steps...</div>
+                            <div class="timer">00:15</div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-bottom: 15px; color: #5E6C84; font-size: 13px;">
+                            Perform the actions that reproduce the bug
+                        </div>
+                        
+                        <div class="steps-box">
+                            <h3>Captured Steps (3)</h3>
+                            <div class="step-item">
+                                <div class="step-number">1</div>
+                                <div>Click on "Login" button</div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">2</div>
+                                <div>Type in username field</div>
+                            </div>
+                            <div class="step-item">
+                                <div class="step-number">3</div>
+                                <div>Click on "Submit" button</div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary">
+                            <span>⏹️</span> Stop & Create Bug Report
+                        </button>
+                        
+                        <button class="btn btn-tertiary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Screen 3: Bug Form -->
+            <div class="screen-wrapper">
+                <div class="screen-header">Step 3: Bug Report Form</div>
+                <div class="screen-content">
+                    <div class="popup-mock">
+                        <div class="form-box">
+                            <div class="auto-capture-box">
+                                <div class="auto-capture-title">Auto-Captured Information ✓</div>
+                                <div class="pills">
+                                    <span class="pill">📸 Screenshot</span>
+                                    <span class="pill">📝 3 Steps</span>
+                                    <span class="pill">🌐 Environment</span>
+                                    <span class="pill">⚠️ 2 Errors</span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group-mock">
+                                <label class="label-mock">Bug Summary *</label>
+                                <input class="input-mock" value="Login button not responding on click" />
+                            </div>
+                            
+                            <div class="form-group-mock">
+                                <label class="label-mock">Project *</label>
+                                <select class="input-mock">
+                                    <option>PROJECT</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group-mock">
+                                <label class="label-mock">Priority</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-tertiary" style="flex: 1; margin: 0;">Low</button>
+                                    <button class="btn btn-primary" style="flex: 1; margin: 0;">Medium</button>
+                                    <button class="btn btn-tertiary" style="flex: 1; margin: 0;">High</button>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group-mock">
+                                <label class="label-mock">Expected Behavior</label>
+                                <textarea class="input-mock" rows="2">Should navigate to dashboard</textarea>
+                            </div>
+                            
+                            <div class="form-group-mock">
+                                <label class="label-mock">Actual Behavior *</label>
+                                <textarea class="input-mock" rows="2">Page remains on login screen</textarea>
+                            </div>
+                            
+                            <div class="form-group-mock">
+                                <label class="label-mock">Screenshot</label>
+                                <div class="screenshot-box">
+                                    <div class="screenshot-placeholder">
+                                        📸 Screenshot Preview
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="btn btn-primary">
+                                <span>🚀</span> Create Jira Issue
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Screen 4: Success -->
+            <div class="screen-wrapper">
+                <div class="screen-header">Step 4: Success</div>
+                <div class="screen-content">
+                    <div class="popup-mock">
+                        <div class="success-box">
+                            <div class="success-icon-mock">✅</div>
+                            <div class="success-title">Bug Logged Successfully!</div>
+                            
+                            <div class="jira-link-box">
+                                <p style="font-size: 13px; color: #5E6C84; margin-bottom: 10px;">
+                                    Your bug has been created in Jira
+                                </p>
+                                <div class="issue-key">PROJ-123 🔗</div>
+                            </div>
+                            
+                            <button class="btn btn-primary">View in Jira</button>
+                            <button class="btn btn-secondary">Log Another Bug</button>
+                            <button class="btn btn-tertiary">Done</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Flow Diagram -->
+        <div class="flow-diagram">
+            <h2 class="flow-title">📋 Complete User Flow</h2>
+            
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="flow-number">1</div>
+                    <div class="flow-content">
+                        <div class="flow-step-title">Open Extension</div>
+                        <div class="flow-step-desc">Click extension icon → See landing screen with 3 options</div>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <div class="flow-number">2</div>
+                    <div class="flow-content">
+                        <div class="flow-step-title">Choose Path</div>
+                        <div class="flow-step-desc">
+                            <strong>Quick Report:</strong> Immediate bug form (30 sec)<br>
+                            <strong>Record Steps:</strong> Capture interactions first (1 min)
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <div class="flow-number">3</div>
+                    <div class="flow-content">
+                        <div class="flow-step-title">Auto-Capture</div>
+                        <div class="flow-step-desc">
+                            Extension automatically captures: Screenshot, URL, Browser info, Console errors, Network errors, Timestamp
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <div class="flow-number">4</div>
+                    <div class="flow-content">
+                        <div class="flow-step-title">Fill Bug Form</div>
+                        <div class="flow-step-desc">
+                            Review auto-captured data → Add summary & actual behavior → Select priority → Submit
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <div class="flow-number">5</div>
+                    <div class="flow-content">
+                        <div class="flow-step-title">Create Jira Issue</div>
+                        <div class="flow-step-desc">
+                            Extension sends data to Jira API → Creates issue → Uploads screenshot → Returns issue key
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="arrow">↓</div>
+                
+                <div class="flow-step">
+                    <div class="flow-number">6</div>
+                    <div class="flow-content">
+                        <div class="flow-step-title">Success!</div>
+                        <div class="flow-step-desc">
+                            View Jira issue link → Option to log another bug or close
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 40px; padding: 20px; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-radius: 8px; border-left: 4px solid #10b981;">
+                <h3 style="color: #065f46; margin-bottom: 10px;">⏱️ Time Savings</h3>
+                <div style="display: flex; justify-content: space-around; text-align: center;">
+                    <div>
+                        <div style="font-size: 32px; font-weight: bold; color: #dc2626;">5-10 min</div>
+                        <div style="font-size: 14px; color: #64748b;">Manual Process</div>
+                    </div>
+                    <div style="font-size: 32px; color: #64748b;">→</div>
+                    <div>
+                        <div style="font-size: 32px; font-weight: bold; color: #10b981;">30-60 sec</div>
+                        <div style="font-size: 14px; color: #64748b;">With Quick Logger</div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 15px; font-size: 18px; font-weight: bold; color: #065f46;">
+                    80-90% Time Reduction! 🚀
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

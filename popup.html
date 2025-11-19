@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jira Quick Logger</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <!-- Step 1: Initial Landing -->
+    <div id="landing-view" class="view active">
+        <div class="header">
+            <img src="icon.png" alt="Jira Quick Logger" class="logo">
+            <h1>Jira Quick Logger</h1>
+        </div>
+        
+        <div class="actions">
+            <button id="quick-bug-btn" class="primary-btn">
+                <span class="icon">🐛</span>
+                Quick Bug Report
+            </button>
+            
+            <button id="start-recording-btn" class="secondary-btn">
+                <span class="icon">⏺️</span>
+                Record Steps & Report
+            </button>
+            
+            <button id="settings-btn" class="tertiary-btn">
+                <span class="icon">⚙️</span>
+                Settings
+            </button>
+        </div>
+        
+        <div class="recent-bugs">
+            <h3>Recent Bugs</h3>
+            <div id="recent-list">
+                <p class="empty-state">No recent bugs logged</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 2: Recording Mode -->
+    <div id="recording-view" class="view">
+        <div class="header recording-header">
+            <h2>🔴 Recording Steps...</h2>
+            <span id="recording-timer">00:00</span>
+        </div>
+        
+        <div class="recording-info">
+            <p>Perform the actions that reproduce the bug</p>
+            <div class="recorded-steps">
+                <h3>Captured Steps <span id="step-count">(0)</span></h3>
+                <ul id="steps-list">
+                    <!-- Steps will be added here dynamically -->
+                </ul>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button id="stop-recording-btn" class="primary-btn">
+                <span class="icon">⏹️</span>
+                Stop & Create Bug Report
+            </button>
+            <button id="cancel-recording-btn" class="tertiary-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Step 3: Bug Form -->
+    <div id="form-view" class="view">
+        <div class="header">
+            <button id="back-btn" class="back-btn">← Back</button>
+            <h2>Create Bug Report</h2>
+        </div>
+        
+        <form id="bug-form">
+            <!-- Auto-captured info preview -->
+            <div class="auto-captured-section">
+                <h3>Auto-Captured Information ✓</h3>
+                <div class="info-pills">
+                    <span class="pill">📸 Screenshot</span>
+                    <span class="pill" id="steps-pill">📝 0 Steps</span>
+                    <span class="pill">🌐 Environment</span>
+                    <span class="pill" id="errors-pill">⚠️ 0 Errors</span>
+                </div>
+            </div>
+
+            <!-- Summary -->
+            <div class="form-group">
+                <label for="summary">Bug Summary *</label>
+                <input type="text" id="summary" placeholder="e.g., Login button not responding on click" required>
+                <div class="smart-suggestion" id="smart-suggestion" style="display: none;">
+                    <span class="icon">💡</span>
+                    <span id="suggestion-text"></span>
+                    <button type="button" id="use-suggestion-btn">Use</button>
+                </div>
+            </div>
+
+            <!-- Project & Issue Type -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="project">Project *</label>
+                    <select id="project" required>
+                        <option value="">Select Project</option>
+                        <!-- Projects loaded from Jira -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="issue-type">Type</label>
+                    <select id="issue-type">
+                        <option value="Bug">Bug</option>
+                        <option value="Task">Task</option>
+                        <option value="Story">Story</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+                <label>Priority</label>
+                <div class="priority-buttons">
+                    <button type="button" class="priority-btn" data-priority="Low">Low</button>
+                    <button type="button" class="priority-btn active" data-priority="Medium">Medium</button>
+                    <button type="button" class="priority-btn" data-priority="High">High</button>
+                    <button type="button" class="priority-btn" data-priority="Critical">Critical</button>
+                </div>
+            </div>
+
+            <!-- Steps (if recorded) -->
+            <div class="form-group" id="steps-section" style="display: none;">
+                <label>Steps to Reproduce</label>
+                <div class="steps-preview" id="steps-preview">
+                    <!-- Steps will be shown here -->
+                </div>
+                <button type="button" id="edit-steps-btn" class="link-btn">Edit Steps</button>
+            </div>
+
+            <!-- Expected vs Actual -->
+            <div class="form-group">
+                <label for="expected">Expected Behavior</label>
+                <textarea id="expected" rows="2" placeholder="What should happen?"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="actual">Actual Behavior *</label>
+                <textarea id="actual" rows="2" placeholder="What actually happened?" required></textarea>
+            </div>
+
+            <!-- Screenshot Preview -->
+            <div class="form-group">
+                <label>Screenshot</label>
+                <div class="screenshot-preview">
+                    <img id="screenshot-img" src="" alt="Screenshot">
+                    <div class="screenshot-actions">
+                        <button type="button" id="annotate-btn" class="link-btn">✏️ Annotate</button>
+                        <button type="button" id="retake-btn" class="link-btn">📸 Retake</button>
+                        <button type="button" id="remove-screenshot-btn" class="link-btn">🗑️ Remove</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Environment Details (collapsed) -->
+            <div class="collapsible-section">
+                <button type="button" class="collapsible-header" id="env-toggle">
+                    <span>Environment Details</span>
+                    <span class="arrow">▼</span>
+                </button>
+                <div class="collapsible-content" id="env-details">
+                    <div class="env-info">
+                        <div class="env-item">
+                            <strong>URL:</strong>
+                            <span id="env-url">-</span>
+                        </div>
+                        <div class="env-item">
+                            <strong>Browser:</strong>
+                            <span id="env-browser">-</span>
+                        </div>
+                        <div class="env-item">
+                            <strong>Viewport:</strong>
+                            <span id="env-viewport">-</span>
+                        </div>
+                        <div class="env-item">
+                            <strong>Timestamp:</strong>
+                            <span id="env-timestamp">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Console Errors (if any) -->
+            <div class="collapsible-section" id="errors-section" style="display: none;">
+                <button type="button" class="collapsible-header" id="errors-toggle">
+                    <span>Console Errors (<span id="error-count">0</span>)</span>
+                    <span class="arrow">▼</span>
+                </button>
+                <div class="collapsible-content" id="errors-content">
+                    <pre id="console-errors"></pre>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="form-actions">
+                <button type="submit" id="submit-btn" class="primary-btn">
+                    <span class="icon">🚀</span>
+                    Create Jira Issue
+                </button>
+                <button type="button" id="save-draft-btn" class="secondary-btn">Save Draft</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Step 4: Success View -->
+    <div id="success-view" class="view">
+        <div class="success-content">
+            <div class="success-icon">✅</div>
+            <h2>Bug Logged Successfully!</h2>
+            
+            <div class="jira-link">
+                <p>Your bug has been created in Jira</p>
+                <a id="jira-issue-link" href="#" target="_blank" class="issue-link">
+                    <span id="issue-key">PROJ-123</span>
+                    <span class="external-icon">🔗</span>
+                </a>
+            </div>
+            
+            <div class="success-actions">
+                <button id="view-in-jira-btn" class="primary-btn">View in Jira</button>
+                <button id="log-another-btn" class="secondary-btn">Log Another Bug</button>
+                <button id="done-btn" class="tertiary-btn">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings View -->
+    <div id="settings-view" class="view">
+        <div class="header">
+            <button id="settings-back-btn" class="back-btn">← Back</button>
+            <h2>Settings</h2>
+        </div>
+        
+        <form id="settings-form">
+            <div class="form-group">
+                <label for="jira-url">Jira URL *</label>
+                <input type="url" id="jira-url" placeholder="https://yourcompany.atlassian.net" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" placeholder="your.email@company.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="api-token">API Token *</label>
+                <input type="password" id="api-token" placeholder="Your Jira API token" required>
+                <small><a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">Get API Token</a></small>
+            </div>
+            
+            <div class="form-group">
+                <label for="default-project">Default Project</label>
+                <select id="default-project">
+                    <option value="">None</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="auto-capture-errors" checked>
+                    Auto-capture console errors
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="auto-screenshot" checked>
+                    Auto-capture screenshot
+                </label>
+            </div>
+            
+            <div class="form-actions">
+                <button type="submit" class="primary-btn">Save Settings</button>
+                <button type="button" id="test-connection-btn" class="secondary-btn">Test Connection</button>
+            </div>
+            
+            <div id="connection-status" class="status-message" style="display: none;"></div>
+        </form>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

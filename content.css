@@ -1,0 +1,17 @@
+/* Jira Quick Logger - Content Script Styles */
+
+/* Recording indicator is injected inline, but we can define reusable styles here if needed */
+
+/* Highlight animation for clicked elements */
+@keyframes jira-logger-highlight {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+  }
+}
+
+.jira-logger-highlighted {
+  animation: jira-logger-highlight 0.5s ease-out;
+}
