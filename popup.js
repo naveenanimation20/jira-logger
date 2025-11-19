@@ -352,10 +352,7 @@ function toggleStepsEditing() {
     }
 
     deleteButtons.forEach((btn, index) => {
-      console.log(`Button ${index} BEFORE:`, {
-        display: btn.style.display,
-        className: btn.className
-      });
+      console.log(`Button ${index} BEFORE - display: "${btn.style.display}", class: "${btn.className}"`);
 
       btn.style.display = 'flex';
       btn.style.alignItems = 'center';
@@ -371,11 +368,19 @@ function toggleStepsEditing() {
       btn.style.padding = '0';
       btn.style.fontWeight = 'bold';
 
-      console.log(`Button ${index} AFTER:`, {
-        display: btn.style.display,
-        computedDisplay: window.getComputedStyle(btn).display,
-        visible: btn.offsetWidth > 0 && btn.offsetHeight > 0
-      });
+      const computedStyle = window.getComputedStyle(btn);
+      const isVisible = btn.offsetWidth > 0 && btn.offsetHeight > 0;
+
+      console.log(`Button ${index} AFTER - inline display: "${btn.style.display}", computed display: "${computedStyle.display}", width: ${btn.offsetWidth}px, height: ${btn.offsetHeight}px, visible: ${isVisible}`);
+
+      if (!isVisible) {
+        console.error(`❌ Button ${index} is INVISIBLE despite setting display: flex!`);
+        console.log(`  - Computed display: ${computedStyle.display}`);
+        console.log(`  - Computed visibility: ${computedStyle.visibility}`);
+        console.log(`  - Computed opacity: ${computedStyle.opacity}`);
+        console.log(`  - Position: ${computedStyle.position}`);
+        console.log(`  - Z-index: ${computedStyle.zIndex}`);
+      }
     });
 
     console.log('✅ Edit mode ENABLED');
