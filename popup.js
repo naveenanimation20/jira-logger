@@ -289,10 +289,10 @@ function updateStepsList() {
   stepCount.textContent = `(${recordingData.steps.length})`;
 
   stepsList.innerHTML = recordingData.steps.map((step, index) => `
-    <li>
-      <div class="step-number">${index + 1}</div>
-      <div class="step-content">${formatStepDescription(step)}</div>
-      <button class="delete-step-btn" data-index="${index}" title="Delete step">×</button>
+    <li style="display: flex; align-items: center; gap: 8px; padding: 8px; margin-bottom: 6px; background: #f8fafc; border-radius: 4px; font-size: 12px; color: #64748b; border-left: 3px solid #e2e8f0;">
+      <div class="step-number" style="background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0;">${index + 1}</div>
+      <div class="step-content" style="flex: 1;">${formatStepDescription(step)}</div>
+      <button class="delete-step-btn" data-index="${index}" title="Delete step" style="display: none; background: #dc2626; color: white; border: none; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 16px; line-height: 1; padding: 0; flex-shrink: 0;">×</button>
     </li>
   `).join('');
 
