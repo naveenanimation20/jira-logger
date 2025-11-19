@@ -113,24 +113,30 @@ function stopRecording() {
 // Event Handlers
 function handleClick(event) {
   if (!isRecording) return;
-  
+
   const element = event.target;
-  
+
   // Don't record clicks on our recording indicator
   if (element.closest('#jira-logger-recording-indicator')) {
     return;
   }
-  
+
   const selector = getElementSelector(element);
   const text = getElementText(element);
-  
+
+  // Get element type for better description
+  const elementType = element.tagName.toLowerCase();
+  const elementDescription = getElementDescription(element);
+
   const step = {
     action: 'Click',
     element: selector,
     text: text,
+    elementType: elementType,
+    description: elementDescription, // Human-readable description
     timestamp: new Date().toISOString()
   };
-  
+
   recordedSteps.push(step);
   console.log('Step recorded:', step);
   
@@ -164,21 +170,26 @@ function handleClick(event) {
 
 function handleInput(event) {
   if (!isRecording) return;
-  
+
   const element = event.target;
   const selector = getElementSelector(element);
-  
-  // Don't record actual input values for security
-  const step = {
-    action: 'Type',
-    element: selector,
-    text: element.placeholder || element.name || 'input field',
-    timestamp: new Date().toISOString()
-  };
-  
+
   // Debounce input events - only record after 1 second of no typing
   clearTimeout(element._inputTimer);
   element._inputTimer = setTimeout(() => {
+    // Capture the actual typed value
+    const typedValue = element.value || '';
+    const fieldLabel = element.placeholder || element.name || element.getAttribute('aria-label') || 'input field';
+
+    const step = {
+      action: 'Type',
+      element: selector,
+      text: fieldLabel,
+      value: typedValue, // Store actual typed value
+      description: typedValue ? `Type "${typedValue}" in ${fieldLabel}` : `Type in ${fieldLabel}`, // Human-readable description
+      timestamp: new Date().toISOString()
+    };
+
     recordedSteps.push(step);
     console.log('Input step recorded:', step);
     
@@ -209,24 +220,33 @@ function handleInput(event) {
 
 function handleChange(event) {
   if (!isRecording) return;
-  
+
   const element = event.target;
   const selector = getElementSelector(element);
-  
-  let text = '';
+
+  let selectedValue = '';
+  let fieldLabel = '';
+
   if (element.tagName === 'SELECT') {
-    text = element.options[element.selectedIndex]?.text || 'option';
+    selectedValue = element.options[element.selectedIndex]?.text || element.value || 'option';
+    fieldLabel = element.getAttribute('aria-label') || element.name || 'dropdown';
+  } else if (element.type === 'checkbox' || element.type === 'radio') {
+    selectedValue = element.checked ? 'checked' : 'unchecked';
+    fieldLabel = element.getAttribute('aria-label') || element.name || element.type;
   } else {
-    text = element.value;
+    selectedValue = element.value;
+    fieldLabel = element.placeholder || element.name || 'field';
   }
-  
+
   const step = {
     action: 'Select',
     element: selector,
-    text: text,
+    text: fieldLabel,
+    value: selectedValue, // Store actual selected value
+    description: `Select "${selectedValue}" from ${fieldLabel}`, // Human-readable description
     timestamp: new Date().toISOString()
   };
-  
+
   recordedSteps.push(step);
   console.log('Change step recorded:', step);
   
@@ -298,16 +318,65 @@ function getElementSelector(element) {
 
 function getElementText(element) {
   // Get meaningful text from element
-  const text = element.textContent?.trim() || 
-               element.value || 
-               element.placeholder || 
-               element.alt || 
+  const text = element.textContent?.trim() ||
+               element.value ||
+               element.placeholder ||
+               element.alt ||
                element.title ||
                element.getAttribute('aria-label') ||
                '';
-  
+
   // Limit to 50 characters
   return text.substring(0, 50);
+}
+
+function getElementDescription(element) {
+  // Generate a human-readable description of what was clicked
+  const tagName = element.tagName.toLowerCase();
+  const text = getElementText(element);
+
+  // For buttons
+  if (tagName === 'button' || element.type === 'button' || element.type === 'submit') {
+    return text ? `Click on "${text}" button` : 'Click on button';
+  }
+
+  // For links
+  if (tagName === 'a') {
+    return text ? `Click on "${text}" link` : 'Click on link';
+  }
+
+  // For inputs
+  if (tagName === 'input') {
+    if (element.type === 'checkbox') {
+      return text ? `Click on "${text}" checkbox` : 'Click on checkbox';
+    }
+    if (element.type === 'radio') {
+      return text ? `Click on "${text}" radio button` : 'Click on radio button';
+    }
+    return text ? `Click on "${text}" input` : 'Click on input field';
+  }
+
+  // For images
+  if (tagName === 'img') {
+    const alt = element.alt || text;
+    return alt ? `Click on "${alt}" image` : 'Click on image';
+  }
+
+  // For icons (common icon classes)
+  if (element.className && typeof element.className === 'string') {
+    if (element.className.includes('icon') || element.className.includes('fa-')) {
+      const ariaLabel = element.getAttribute('aria-label');
+      return ariaLabel ? `Click on "${ariaLabel}" icon` : 'Click on icon';
+    }
+  }
+
+  // Generic elements with text
+  if (text) {
+    return `Click on "${text}"`;
+  }
+
+  // Fallback
+  return `Click on ${tagName}`;
 }
 
 function highlightElement(element) {

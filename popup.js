@@ -285,9 +285,40 @@ function updateStepsList() {
   stepsList.innerHTML = recordingData.steps.map((step, index) => `
     <li>
       <div class="step-number">${index + 1}</div>
-      <div>${step.action} ${step.element}</div>
+      <div>${formatStepDescription(step)}</div>
     </li>
   `).join('');
+}
+
+// Helper function to format step descriptions
+function formatStepDescription(step) {
+  // If step has a pre-generated description, use it
+  if (step.description) {
+    return step.description;
+  }
+
+  // Otherwise, generate description based on action type
+  if (step.action === 'Type' && step.value) {
+    return `Type "${step.value}" in ${step.text || step.element}`;
+  } else if (step.action === 'Type') {
+    return `Type in ${step.text || step.element}`;
+  }
+
+  if (step.action === 'Select' && step.value) {
+    return `Select "${step.value}" from ${step.text || step.element}`;
+  } else if (step.action === 'Select') {
+    return `Select from ${step.text || step.element}`;
+  }
+
+  if (step.action === 'Click') {
+    if (step.text) {
+      return `Click on "${step.text}"`;
+    }
+    return `Click on ${step.element}`;
+  }
+
+  // Fallback
+  return `${step.action} on ${step.element}`;
 }
 
 async function stopRecording() {
@@ -459,8 +490,8 @@ function populateForm() {
   if (recordingData.steps.length > 0) {
     document.getElementById('steps-section').style.display = 'block';
     const stepsPreview = document.getElementById('steps-preview');
-    stepsPreview.innerHTML = recordingData.steps.map((step, index) => 
-      `${index + 1}. ${step.action} on "${step.element}"`
+    stepsPreview.innerHTML = recordingData.steps.map((step, index) =>
+      `${index + 1}. ${formatStepDescription(step)}`
     ).join('<br>');
   }
   
@@ -606,7 +637,7 @@ function formatJiraDescription(formData) {
         type: 'listItem',
         content: [{
           type: 'paragraph',
-          content: [{ type: 'text', text: `${step.action} ${step.element}` }]
+          content: [{ type: 'text', text: formatStepDescription(step) }]
         }]
       }))
     });
@@ -710,7 +741,7 @@ function formatJiraDescriptionPlainText(formData) {
   if (formData.steps.length > 0) {
     description += 'Steps to Reproduce:\n';
     formData.steps.forEach((step, index) => {
-      description += `${index + 1}. ${step.action} ${step.element}\n`;
+      description += `${index + 1}. ${formatStepDescription(step)}\n`;
     });
     description += '\n';
   }
