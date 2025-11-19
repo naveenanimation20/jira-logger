@@ -307,7 +307,13 @@ function updateStepsList() {
   // Preserve edit mode if it was active
   if (stepsEditMode) {
     stepsList.classList.add('edit-mode');
-    console.log('Edit mode preserved, delete buttons should be visible');
+    // Manually show delete buttons in edit mode (CSS backup)
+    stepsList.querySelectorAll('.delete-step-btn').forEach(btn => {
+      btn.style.display = 'flex';
+      btn.style.alignItems = 'center';
+      btn.style.justifyContent = 'center';
+    });
+    console.log('Edit mode preserved, delete buttons manually shown');
   }
 }
 
@@ -324,12 +330,38 @@ function toggleStepsEditing() {
     stepsList.classList.add('edit-mode');
     editBtn.textContent = 'Done Editing';
     editBtn.style.color = '#dc2626';
+
+    // Manually show delete buttons (CSS backup solution)
+    const deleteButtons = stepsList.querySelectorAll('.delete-step-btn');
+    deleteButtons.forEach(btn => {
+      btn.style.display = 'flex';
+      btn.style.alignItems = 'center';
+      btn.style.justifyContent = 'center';
+      btn.style.background = '#dc2626';
+      btn.style.color = 'white';
+      btn.style.border = 'none';
+      btn.style.width = '20px';
+      btn.style.height = '20px';
+      btn.style.borderRadius = '50%';
+      btn.style.cursor = 'pointer';
+      btn.style.fontSize = '16px';
+      btn.style.padding = '0';
+    });
+
     console.log('Edit mode ENABLED. Classes on list:', stepsList.className);
-    console.log('Delete buttons count:', stepsList.querySelectorAll('.delete-step-btn').length);
+    console.log('Delete buttons count:', deleteButtons.length);
+    console.log('Delete buttons manually shown with inline styles');
   } else {
     stepsList.classList.remove('edit-mode');
     editBtn.textContent = 'Edit Steps';
     editBtn.style.color = '';
+
+    // Manually hide delete buttons
+    const deleteButtons = stepsList.querySelectorAll('.delete-step-btn');
+    deleteButtons.forEach(btn => {
+      btn.style.display = 'none';
+    });
+
     console.log('Edit mode DISABLED');
   }
 }
