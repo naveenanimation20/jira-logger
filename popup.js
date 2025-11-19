@@ -98,7 +98,8 @@ function setupEventListeners() {
   document.getElementById('back-btn').addEventListener('click', () => showView('landing'));
   document.getElementById('bug-form').addEventListener('submit', handleSubmitBug);
   document.getElementById('use-suggestion-btn')?.addEventListener('click', useSuggestion);
-  
+  document.getElementById('edit-steps-btn')?.addEventListener('click', toggleStepsEditing);
+
   // Priority buttons
   document.querySelectorAll('.priority-btn').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -279,15 +280,80 @@ function handleRecordingMessage(message, sender, sendResponse) {
 function updateStepsList() {
   const stepsList = document.getElementById('steps-list');
   const stepCount = document.getElementById('step-count');
-  
+
   stepCount.textContent = `(${recordingData.steps.length})`;
-  
+
   stepsList.innerHTML = recordingData.steps.map((step, index) => `
     <li>
       <div class="step-number">${index + 1}</div>
-      <div>${formatStepDescription(step)}</div>
+      <div class="step-content">${formatStepDescription(step)}</div>
+      <button class="delete-step-btn" data-index="${index}" title="Delete step">×</button>
     </li>
   `).join('');
+
+  // Add event listeners to delete buttons
+  stepsList.querySelectorAll('.delete-step-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const index = parseInt(e.target.dataset.index);
+      deleteStep(index);
+    });
+  });
+}
+
+// Toggle steps editing mode
+let stepsEditMode = false;
+function toggleStepsEditing() {
+  stepsEditMode = !stepsEditMode;
+  const stepsList = document.getElementById('steps-list');
+  const editBtn = document.getElementById('edit-steps-btn');
+
+  if (stepsEditMode) {
+    stepsList.classList.add('edit-mode');
+    editBtn.textContent = 'Done Editing';
+    editBtn.style.color = '#dc2626';
+  } else {
+    stepsList.classList.remove('edit-mode');
+    editBtn.textContent = 'Edit Steps';
+    editBtn.style.color = '';
+  }
+}
+
+// Delete a step from the recording
+function deleteStep(index) {
+  if (index >= 0 && index < recordingData.steps.length) {
+    recordingData.steps.splice(index, 1);
+
+    // Update storage
+    chrome.storage.local.set({ recordedSteps: recordingData.steps });
+
+    // Update UI
+    updateStepsList();
+
+    // Also update the preview
+    const stepsPreview = document.getElementById('steps-preview');
+    if (stepsPreview) {
+      stepsPreview.innerHTML = recordingData.steps.map((step, index) =>
+        `${index + 1}. ${formatStepDescription(step)}`
+      ).join('<br>');
+    }
+
+    console.log(`Step ${index + 1} deleted. Remaining steps: ${recordingData.steps.length}`);
+  }
+}
+
+// Clear all steps
+function clearAllSteps() {
+  if (confirm('Are you sure you want to delete all steps?')) {
+    recordingData.steps = [];
+
+    // Update storage
+    chrome.storage.local.set({ recordedSteps: [] });
+
+    // Update UI
+    updateStepsList();
+
+    console.log('All steps cleared');
+  }
 }
 
 // Helper function to format step descriptions

@@ -218,6 +218,15 @@ function handleClick(event) {
     // Find the actual interactive element (in case user clicked on icon inside button, etc.)
     const element = findInteractiveElement(event.target);
 
+    // Don't record clicks on input/textarea fields - they're just focus events, not actionable
+    // User typing will be captured by handleInput instead
+    if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
+      // Exception: record clicks on checkboxes, radio buttons, and submit buttons
+      if (element.type !== 'checkbox' && element.type !== 'radio' && element.type !== 'submit' && element.type !== 'button') {
+        return; // Skip recording this click
+      }
+    }
+
     const selector = getElementSelector(element);
     const text = getElementText(element);
 
@@ -280,17 +289,27 @@ function handleInput(event) {
         const typedValue = element.value || '';
         const fieldLabel = element.placeholder || element.name || element.getAttribute('aria-label') || 'input field';
 
-        const step = {
-          action: 'Type',
-          element: selector,
-          text: fieldLabel,
-          value: typedValue, // Store actual typed value
-          description: typedValue ? `Type "${typedValue}" in ${fieldLabel}` : `Type in ${fieldLabel}`, // Human-readable description
-          timestamp: new Date().toISOString()
-        };
-
-        recordedSteps.push(step);
-        console.log('✅ Input step recorded:', step);
+        // Check if last step was typing in the same field - if so, replace it
+        const lastStep = recordedSteps[recordedSteps.length - 1];
+        if (lastStep && lastStep.action === 'Type' && lastStep.element === selector) {
+          // Replace the last step instead of adding a new one
+          lastStep.value = typedValue;
+          lastStep.description = typedValue ? `Type "${typedValue}" in ${fieldLabel}` : `Type in ${fieldLabel}`;
+          lastStep.timestamp = new Date().toISOString();
+          console.log('✅ Input step updated:', lastStep);
+        } else {
+          // Add new step
+          const step = {
+            action: 'Type',
+            element: selector,
+            text: fieldLabel,
+            value: typedValue, // Store actual typed value
+            description: typedValue ? `Type "${typedValue}" in ${fieldLabel}` : `Type in ${fieldLabel}`, // Human-readable description
+            timestamp: new Date().toISOString()
+          };
+          recordedSteps.push(step);
+          console.log('✅ Input step recorded:', step);
+        }
 
         // Save to storage (using helper to avoid race conditions)
         saveStepsToStorage();
@@ -301,7 +320,7 @@ function handleInput(event) {
         try {
           chrome.runtime.sendMessage({
             type: 'STEP_RECORDED',
-            step: step
+            step: lastStep && lastStep.action === 'Type' && lastStep.element === selector ? lastStep : recordedSteps[recordedSteps.length - 1]
           }, (response) => {
             if (chrome.runtime.lastError) {
               console.log('Popup is closed, step saved to storage');
@@ -325,28 +344,51 @@ function handleChange(event) {
 
   try {
     const element = event.target;
+
+    // Only record change events for SELECT, checkbox, and radio
+    // Text inputs will be captured by handleInput
+    if (element.tagName === 'INPUT' &&
+        element.type !== 'checkbox' &&
+        element.type !== 'radio' &&
+        element.type !== 'file') {
+      return; // Skip text input change events (autocomplete/autofill)
+    }
+
     const selector = getElementSelector(element);
 
     let selectedValue = '';
     let fieldLabel = '';
+    let description = '';
 
     if (element.tagName === 'SELECT') {
       selectedValue = element.options[element.selectedIndex]?.text || element.value || 'option';
       fieldLabel = element.getAttribute('aria-label') || element.name || 'dropdown';
-    } else if (element.type === 'checkbox' || element.type === 'radio') {
+      description = `Select "${selectedValue}" from ${fieldLabel}`;
+    } else if (element.type === 'checkbox') {
+      const checkboxLabel = element.getAttribute('aria-label') || element.name || getElementText(element) || 'checkbox';
       selectedValue = element.checked ? 'checked' : 'unchecked';
-      fieldLabel = element.getAttribute('aria-label') || element.name || element.type;
+      description = element.checked ? `Check "${checkboxLabel}"` : `Uncheck "${checkboxLabel}"`;
+      fieldLabel = checkboxLabel;
+    } else if (element.type === 'radio') {
+      const radioLabel = element.getAttribute('aria-label') || element.value || element.name || 'option';
+      selectedValue = radioLabel;
+      fieldLabel = element.name || 'radio group';
+      description = `Select "${radioLabel}" from ${fieldLabel}`;
+    } else if (element.type === 'file') {
+      const fileName = element.files?.[0]?.name || 'file';
+      selectedValue = fileName;
+      fieldLabel = element.getAttribute('aria-label') || element.name || 'file input';
+      description = `Upload "${fileName}" to ${fieldLabel}`;
     } else {
-      selectedValue = element.value;
-      fieldLabel = element.placeholder || element.name || 'field';
+      return; // Skip other input types
     }
 
     const step = {
       action: 'Select',
       element: selector,
       text: fieldLabel,
-      value: selectedValue, // Store actual selected value
-      description: `Select "${selectedValue}" from ${fieldLabel}`, // Human-readable description
+      value: selectedValue,
+      description: description,
       timestamp: new Date().toISOString()
     };
 

@@ -235,6 +235,7 @@ button {
     align-items: center;
     gap: 8px;
     border-left: 3px solid #e2e8f0;
+    position: relative;
 }
 
 #steps-list li .step-number {
@@ -247,6 +248,38 @@ button {
     align-items: center;
     justify-content: center;
     font-size: 11px;
+    flex-shrink: 0;
+}
+
+#steps-list li .step-content {
+    flex: 1;
+}
+
+#steps-list li .delete-step-btn {
+    display: none;
+    background: #dc2626;
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+#steps-list li .delete-step-btn:hover {
+    background: #b91c1c;
+    transform: scale(1.1);
+}
+
+#steps-list.edit-mode li .delete-step-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: bold;
     flex-shrink: 0;
 }
