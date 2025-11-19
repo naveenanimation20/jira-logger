@@ -110,16 +110,58 @@ function stopRecording() {
   console.log('Recording stopped. Total steps:', recordedSteps.length);
 }
 
+// Helper function to find the actual interactive element
+function findInteractiveElement(element) {
+  // List of interactive element types
+  const interactiveTags = ['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA'];
+  const interactiveRoles = ['button', 'link', 'tab', 'menuitem'];
+
+  let current = element;
+  let maxDepth = 5; // Prevent infinite loops
+
+  while (current && maxDepth > 0) {
+    // Check if current element is interactive
+    if (interactiveTags.includes(current.tagName)) {
+      return current;
+    }
+
+    // Check for role attribute
+    const role = current.getAttribute('role');
+    if (role && interactiveRoles.includes(role)) {
+      return current;
+    }
+
+    // Check for common button/clickable classes
+    const className = current.className && typeof current.className === 'string' ? current.className : '';
+    if (className.includes('btn') || className.includes('button') || className.includes('clickable')) {
+      return current;
+    }
+
+    // Check for onclick attribute
+    if (current.hasAttribute('onclick') || current.hasAttribute('ng-click')) {
+      return current;
+    }
+
+    // Move up to parent
+    current = current.parentElement;
+    maxDepth--;
+  }
+
+  // If no interactive element found, return the original
+  return element;
+}
+
 // Event Handlers
 function handleClick(event) {
   if (!isRecording) return;
 
-  const element = event.target;
-
   // Don't record clicks on our recording indicator
-  if (element.closest('#jira-logger-recording-indicator')) {
+  if (event.target.closest('#jira-logger-recording-indicator')) {
     return;
   }
+
+  // Find the actual interactive element (in case user clicked on icon inside button, etc.)
+  const element = findInteractiveElement(event.target);
 
   const selector = getElementSelector(element);
   const text = getElementText(element);
@@ -174,7 +216,7 @@ function handleInput(event) {
   const element = event.target;
   const selector = getElementSelector(element);
 
-  // Debounce input events - only record after 1 second of no typing
+  // Debounce input events - only record after 500ms of no typing (reduced for faster capture)
   clearTimeout(element._inputTimer);
   element._inputTimer = setTimeout(() => {
     // Capture the actual typed value
@@ -192,21 +234,21 @@ function handleInput(event) {
 
     recordedSteps.push(step);
     console.log('Input step recorded:', step);
-    
+
     // Save to storage immediately
     chrome.storage.local.get(['recordedSteps'], (result) => {
       const existingSteps = result.recordedSteps || [];
       existingSteps.push(step);
       chrome.storage.local.set({ recordedSteps: existingSteps });
     });
-    
+
     // Update recording indicator
     updateRecordingIndicator();
-    
+
     try {
-      chrome.runtime.sendMessage({ 
-        type: 'STEP_RECORDED', 
-        step: step 
+      chrome.runtime.sendMessage({
+        type: 'STEP_RECORDED',
+        step: step
       }, (response) => {
         if (chrome.runtime.lastError) {
           console.log('Popup is closed, step saved to storage');
@@ -215,7 +257,7 @@ function handleInput(event) {
     } catch (error) {
       console.log('Could not send to popup:', error.message);
     }
-  }, 1000);
+  }, 500);
 }
 
 function handleChange(event) {
@@ -335,47 +377,122 @@ function getElementDescription(element) {
   const tagName = element.tagName.toLowerCase();
   const text = getElementText(element);
 
+  // Get additional attributes for better description
+  const ariaLabel = element.getAttribute('aria-label');
+  const title = element.getAttribute('title');
+  const id = element.id;
+  const className = element.className && typeof element.className === 'string' ? element.className : '';
+
+  // Helper to get best available label
+  const getLabel = () => {
+    return text || ariaLabel || title || id || '';
+  };
+
   // For buttons
   if (tagName === 'button' || element.type === 'button' || element.type === 'submit') {
-    return text ? `Click on "${text}" button` : 'Click on button';
+    const label = getLabel();
+    if (label) {
+      return `Click on "${label}" button`;
+    }
+    // Check if it has icon classes
+    if (className.includes('btn')) {
+      return 'Click on button';
+    }
+    return 'Click on button';
   }
 
   // For links
   if (tagName === 'a') {
-    return text ? `Click on "${text}" link` : 'Click on link';
+    const label = getLabel();
+    const href = element.getAttribute('href');
+    if (label) {
+      return `Click on "${label}" link`;
+    }
+    if (href && href !== '#') {
+      return `Click on link to ${href}`;
+    }
+    return 'Click on link';
   }
 
   // For inputs
   if (tagName === 'input') {
+    const label = getLabel();
     if (element.type === 'checkbox') {
-      return text ? `Click on "${text}" checkbox` : 'Click on checkbox';
+      return label ? `Click on "${label}" checkbox` : 'Click on checkbox';
     }
     if (element.type === 'radio') {
-      return text ? `Click on "${text}" radio button` : 'Click on radio button';
+      return label ? `Click on "${label}" radio button` : 'Click on radio button';
     }
-    return text ? `Click on "${text}" input` : 'Click on input field';
+    if (element.type === 'submit') {
+      return label ? `Click on "${label}" submit button` : 'Click on submit button';
+    }
+    return label ? `Click on "${label}" input` : 'Click on input field';
   }
 
   // For images
   if (tagName === 'img') {
-    const alt = element.alt || text;
-    return alt ? `Click on "${alt}" image` : 'Click on image';
+    const alt = element.alt || text || title;
+    const src = element.src;
+    if (alt) {
+      return `Click on "${alt}" image`;
+    }
+    if (src) {
+      const filename = src.split('/').pop().split('?')[0];
+      return `Click on "${filename}" image`;
+    }
+    return 'Click on image';
   }
 
-  // For icons (common icon classes)
-  if (element.className && typeof element.className === 'string') {
-    if (element.className.includes('icon') || element.className.includes('fa-')) {
-      const ariaLabel = element.getAttribute('aria-label');
-      return ariaLabel ? `Click on "${ariaLabel}" icon` : 'Click on icon';
+  // For icons (common icon classes) - check parent too
+  if (className.includes('icon') || className.includes('fa-') || className.includes('glyphicon')) {
+    const label = ariaLabel || title;
+    if (label) {
+      return `Click on "${label}" icon`;
     }
+    // Try to get parent element's label
+    const parent = element.parentElement;
+    if (parent) {
+      const parentText = parent.textContent?.trim();
+      const parentLabel = parent.getAttribute('aria-label') || parent.getAttribute('title');
+      if (parentLabel) {
+        return `Click on "${parentLabel}" icon`;
+      }
+      if (parentText && parentText.length < 30) {
+        return `Click on "${parentText}" icon`;
+      }
+    }
+    return 'Click on icon';
+  }
+
+  // For divs and spans that might be clickable elements
+  if (tagName === 'div' || tagName === 'span') {
+    const label = getLabel();
+    if (label && label.length < 50) {
+      return `Click on "${label}"`;
+    }
+    // Check if it looks like a button
+    if (className.includes('btn') || className.includes('button')) {
+      return label ? `Click on "${label}" button` : 'Click on button';
+    }
+    return label ? `Click on "${label}" ${tagName}` : `Click on ${tagName}`;
   }
 
   // Generic elements with text
-  if (text) {
+  if (text && text.length > 0) {
     return `Click on "${text}"`;
   }
 
-  // Fallback
+  // Check for ID as fallback
+  if (id) {
+    return `Click on element with id "${id}"`;
+  }
+
+  // Final fallback - use selector
+  const selector = getElementSelector(element);
+  if (selector && selector !== tagName) {
+    return `Click on ${selector}`;
+  }
+
   return `Click on ${tagName}`;
 }
 

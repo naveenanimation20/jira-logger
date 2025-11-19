@@ -519,8 +519,9 @@ function generateSmartSuggestion() {
   if (recordingData.steps.length > 0) {
     const lastStep = recordingData.steps[recordingData.steps.length - 1];
     const domain = new URL(recordingData.environment.url).hostname;
-    const suggestion = `${lastStep.action} on ${lastStep.element} failed on ${domain}`;
-    
+    const stepDescription = formatStepDescription(lastStep);
+    const suggestion = `${stepDescription} - failed on ${domain}`;
+
     document.getElementById('suggestion-text').textContent = suggestion;
     document.getElementById('smart-suggestion').style.display = 'flex';
   }
