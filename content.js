@@ -6,6 +6,30 @@ let recordedSteps = [];
 let consoleErrors = [];
 let networkErrors = [];
 
+// Restore recording state on page load (for cross-page navigation)
+(function initializeRecordingState() {
+  chrome.storage.local.get(['isRecording', 'recordedSteps', 'recordingStartTime'], (result) => {
+    if (result.isRecording) {
+      console.log('🔄 Restoring recording state from previous page...');
+      console.log('📊 Previous steps:', result.recordedSteps);
+      isRecording = true;
+      recordedSteps = result.recordedSteps || [];
+
+      // Re-attach event listeners
+      document.addEventListener('click', handleClick, true);
+      document.addEventListener('input', handleInput, true);
+      document.addEventListener('change', handleChange, true);
+
+      // Show recording indicator with updated count
+      showRecordingIndicator();
+      updateRecordingIndicator();
+
+      console.log(`✅ Recording restored! Continuing from ${recordedSteps.length} steps`);
+      console.log(`🔴 Recording is active on: ${window.location.href}`);
+    }
+  });
+})();
+
 // Capture console errors
 const originalConsoleError = console.error;
 console.error = function(...args) {
@@ -81,8 +105,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Helper function to save steps to storage (fixes race condition)
 function saveStepsToStorage() {
   try {
-    // Save the entire recordedSteps array (source of truth)
-    chrome.storage.local.set({ recordedSteps: recordedSteps }, () => {
+    // Save the entire recordedSteps array (source of truth) and recording state
+    chrome.storage.local.set({
+      recordedSteps: recordedSteps,
+      isRecording: isRecording
+    }, () => {
       if (chrome.runtime.lastError) {
         console.error('Error saving to storage:', chrome.runtime.lastError);
       }
@@ -98,8 +125,12 @@ function startRecording() {
   isRecording = true;
   recordedSteps = [];
 
-  // Clear storage when starting new recording
-  chrome.storage.local.set({ recordedSteps: [] });
+  // Persist recording state to survive page navigation
+  chrome.storage.local.set({
+    isRecording: true,
+    recordedSteps: [],
+    recordingStartTime: new Date().toISOString()
+  });
 
   // Add event listeners
   document.addEventListener('click', handleClick, true);
@@ -109,22 +140,28 @@ function startRecording() {
   // Show recording indicator
   showRecordingIndicator();
 
-  console.log('Recording started successfully');
+  console.log('✅ Recording started successfully');
 }
 
 function stopRecording() {
   console.log('Stopping recording in content script');
   isRecording = false;
-  
+
+  // Clear recording state from storage
+  chrome.storage.local.set({
+    isRecording: false,
+    recordingStartTime: null
+  });
+
   // Remove event listeners
   document.removeEventListener('click', handleClick, true);
   document.removeEventListener('input', handleInput, true);
   document.removeEventListener('change', handleChange, true);
-  
+
   // Hide recording indicator
   hideRecordingIndicator();
-  
-  console.log('Recording stopped. Total steps:', recordedSteps.length);
+
+  console.log('✅ Recording stopped. Total steps:', recordedSteps.length);
 }
 
 // Helper function to find the actual interactive element
