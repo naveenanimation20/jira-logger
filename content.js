@@ -78,20 +78,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   return false;
 });
 
+// Helper function to save steps to storage (fixes race condition)
+function saveStepsToStorage() {
+  try {
+    // Save the entire recordedSteps array (source of truth)
+    chrome.storage.local.set({ recordedSteps: recordedSteps }, () => {
+      if (chrome.runtime.lastError) {
+        console.error('Error saving to storage:', chrome.runtime.lastError);
+      }
+    });
+  } catch (error) {
+    console.error('Error in saveStepsToStorage:', error);
+  }
+}
+
 // Recording Functions
 function startRecording() {
   console.log('Starting recording in content script');
   isRecording = true;
   recordedSteps = [];
-  
+
+  // Clear storage when starting new recording
+  chrome.storage.local.set({ recordedSteps: [] });
+
   // Add event listeners
   document.addEventListener('click', handleClick, true);
   document.addEventListener('input', handleInput, true);
   document.addEventListener('change', handleChange, true);
-  
+
   // Show recording indicator
   showRecordingIndicator();
-  
+
   console.log('Recording started successfully');
 }
 
@@ -155,92 +172,152 @@ function findInteractiveElement(element) {
 function handleClick(event) {
   if (!isRecording) return;
 
-  // Don't record clicks on our recording indicator
-  if (event.target.closest('#jira-logger-recording-indicator')) {
-    return;
-  }
-
-  // Find the actual interactive element (in case user clicked on icon inside button, etc.)
-  const element = findInteractiveElement(event.target);
-
-  const selector = getElementSelector(element);
-  const text = getElementText(element);
-
-  // Get element type for better description
-  const elementType = element.tagName.toLowerCase();
-  const elementDescription = getElementDescription(element);
-
-  const step = {
-    action: 'Click',
-    element: selector,
-    text: text,
-    elementType: elementType,
-    description: elementDescription, // Human-readable description
-    timestamp: new Date().toISOString()
-  };
-
-  recordedSteps.push(step);
-  console.log('Step recorded:', step);
-  
-  // Save to storage immediately so it persists even if popup closes
-  chrome.storage.local.get(['recordedSteps'], (result) => {
-    const existingSteps = result.recordedSteps || [];
-    existingSteps.push(step);
-    chrome.storage.local.set({ recordedSteps: existingSteps });
-  });
-  
-  // Update recording indicator
-  updateRecordingIndicator();
-  
-  // Send to popup (if open)
   try {
-    chrome.runtime.sendMessage({ 
-      type: 'STEP_RECORDED', 
-      step: step 
-    }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.log('Popup is closed, step saved to storage');
-      }
-    });
+    // Don't record clicks on our recording indicator
+    if (event.target.closest('#jira-logger-recording-indicator')) {
+      return;
+    }
+
+    // Find the actual interactive element (in case user clicked on icon inside button, etc.)
+    const element = findInteractiveElement(event.target);
+
+    const selector = getElementSelector(element);
+    const text = getElementText(element);
+
+    // Get element type for better description
+    const elementType = element.tagName.toLowerCase();
+    const elementDescription = getElementDescription(element);
+
+    const step = {
+      action: 'Click',
+      element: selector,
+      text: text,
+      elementType: elementType,
+      description: elementDescription, // Human-readable description
+      timestamp: new Date().toISOString()
+    };
+
+    recordedSteps.push(step);
+    console.log('✅ Step recorded:', step);
+
+    // Save to storage (using helper to avoid race conditions)
+    saveStepsToStorage();
+
+    // Update recording indicator
+    updateRecordingIndicator();
+
+    // Send to popup (if open)
+    try {
+      chrome.runtime.sendMessage({
+        type: 'STEP_RECORDED',
+        step: step
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.log('Popup is closed, step saved to storage');
+        }
+      });
+    } catch (error) {
+      console.log('Could not send to popup:', error.message);
+    }
+
+    // Highlight element briefly
+    highlightElement(element);
   } catch (error) {
-    console.log('Could not send to popup:', error.message);
+    console.error('❌ Error in handleClick:', error);
+    // Continue recording even if this step fails
   }
-  
-  // Highlight element briefly
-  highlightElement(element);
 }
 
 function handleInput(event) {
   if (!isRecording) return;
 
-  const element = event.target;
-  const selector = getElementSelector(element);
+  try {
+    const element = event.target;
+    const selector = getElementSelector(element);
 
-  // Debounce input events - only record after 500ms of no typing (reduced for faster capture)
-  clearTimeout(element._inputTimer);
-  element._inputTimer = setTimeout(() => {
-    // Capture the actual typed value
-    const typedValue = element.value || '';
-    const fieldLabel = element.placeholder || element.name || element.getAttribute('aria-label') || 'input field';
+    // Debounce input events - only record after 500ms of no typing (reduced for faster capture)
+    clearTimeout(element._inputTimer);
+    element._inputTimer = setTimeout(() => {
+      try {
+        // Capture the actual typed value
+        const typedValue = element.value || '';
+        const fieldLabel = element.placeholder || element.name || element.getAttribute('aria-label') || 'input field';
+
+        const step = {
+          action: 'Type',
+          element: selector,
+          text: fieldLabel,
+          value: typedValue, // Store actual typed value
+          description: typedValue ? `Type "${typedValue}" in ${fieldLabel}` : `Type in ${fieldLabel}`, // Human-readable description
+          timestamp: new Date().toISOString()
+        };
+
+        recordedSteps.push(step);
+        console.log('✅ Input step recorded:', step);
+
+        // Save to storage (using helper to avoid race conditions)
+        saveStepsToStorage();
+
+        // Update recording indicator
+        updateRecordingIndicator();
+
+        try {
+          chrome.runtime.sendMessage({
+            type: 'STEP_RECORDED',
+            step: step
+          }, (response) => {
+            if (chrome.runtime.lastError) {
+              console.log('Popup is closed, step saved to storage');
+            }
+          });
+        } catch (error) {
+          console.log('Could not send to popup:', error.message);
+        }
+      } catch (error) {
+        console.error('❌ Error in handleInput timeout:', error);
+      }
+    }, 500);
+  } catch (error) {
+    console.error('❌ Error in handleInput:', error);
+    // Continue recording even if this step fails
+  }
+}
+
+function handleChange(event) {
+  if (!isRecording) return;
+
+  try {
+    const element = event.target;
+    const selector = getElementSelector(element);
+
+    let selectedValue = '';
+    let fieldLabel = '';
+
+    if (element.tagName === 'SELECT') {
+      selectedValue = element.options[element.selectedIndex]?.text || element.value || 'option';
+      fieldLabel = element.getAttribute('aria-label') || element.name || 'dropdown';
+    } else if (element.type === 'checkbox' || element.type === 'radio') {
+      selectedValue = element.checked ? 'checked' : 'unchecked';
+      fieldLabel = element.getAttribute('aria-label') || element.name || element.type;
+    } else {
+      selectedValue = element.value;
+      fieldLabel = element.placeholder || element.name || 'field';
+    }
 
     const step = {
-      action: 'Type',
+      action: 'Select',
       element: selector,
       text: fieldLabel,
-      value: typedValue, // Store actual typed value
-      description: typedValue ? `Type "${typedValue}" in ${fieldLabel}` : `Type in ${fieldLabel}`, // Human-readable description
+      value: selectedValue, // Store actual selected value
+      description: `Select "${selectedValue}" from ${fieldLabel}`, // Human-readable description
       timestamp: new Date().toISOString()
     };
 
     recordedSteps.push(step);
-    console.log('Input step recorded:', step);
+    console.log('✅ Change step recorded:', step);
 
-    // Save to storage immediately
-    chrome.storage.local.get(['recordedSteps'], (result) => {
-      const existingSteps = result.recordedSteps || [];
-      existingSteps.push(step);
-      chrome.storage.local.set({ recordedSteps: existingSteps });
-    });
+    // Save to storage (using helper to avoid race conditions)
+    saveStepsToStorage();
 
     // Update recording indicator
     updateRecordingIndicator();
@@ -257,62 +334,9 @@ function handleInput(event) {
     } catch (error) {
       console.log('Could not send to popup:', error.message);
     }
-  }, 500);
-}
-
-function handleChange(event) {
-  if (!isRecording) return;
-
-  const element = event.target;
-  const selector = getElementSelector(element);
-
-  let selectedValue = '';
-  let fieldLabel = '';
-
-  if (element.tagName === 'SELECT') {
-    selectedValue = element.options[element.selectedIndex]?.text || element.value || 'option';
-    fieldLabel = element.getAttribute('aria-label') || element.name || 'dropdown';
-  } else if (element.type === 'checkbox' || element.type === 'radio') {
-    selectedValue = element.checked ? 'checked' : 'unchecked';
-    fieldLabel = element.getAttribute('aria-label') || element.name || element.type;
-  } else {
-    selectedValue = element.value;
-    fieldLabel = element.placeholder || element.name || 'field';
-  }
-
-  const step = {
-    action: 'Select',
-    element: selector,
-    text: fieldLabel,
-    value: selectedValue, // Store actual selected value
-    description: `Select "${selectedValue}" from ${fieldLabel}`, // Human-readable description
-    timestamp: new Date().toISOString()
-  };
-
-  recordedSteps.push(step);
-  console.log('Change step recorded:', step);
-  
-  // Save to storage immediately
-  chrome.storage.local.get(['recordedSteps'], (result) => {
-    const existingSteps = result.recordedSteps || [];
-    existingSteps.push(step);
-    chrome.storage.local.set({ recordedSteps: existingSteps });
-  });
-  
-  // Update recording indicator
-  updateRecordingIndicator();
-  
-  try {
-    chrome.runtime.sendMessage({ 
-      type: 'STEP_RECORDED', 
-      step: step 
-    }, (response) => {
-      if (chrome.runtime.lastError) {
-        console.log('Popup is closed, step saved to storage');
-      }
-    });
   } catch (error) {
-    console.log('Could not send to popup:', error.message);
+    console.error('❌ Error in handleChange:', error);
+    // Continue recording even if this step fails
   }
 }
 
